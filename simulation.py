@@ -1,5 +1,5 @@
 # A place where we can run basic simulations
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 
 from model import CovidModel
 
@@ -13,7 +13,7 @@ RESISTANCE_LEVEL = 0.7
 MAX_STEPS = 500
 INFECTION_THRESHOLD = 0.9
 
-NUM_PROCESSES = 6
+NUM_PROCESSES = max(int(cpu_count() / 2), 1)
 NUM_SIMULATIONS = 500
 
 
