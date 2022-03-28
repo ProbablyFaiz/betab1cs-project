@@ -14,6 +14,7 @@ class InfectionState(int, Enum):
 
     SUSCEPTIBLE = 0
     INFECTED = 1
+    RESISTANT = 2
 
 
 class CovidAgent(Agent):
@@ -27,14 +28,15 @@ class CovidAgent(Agent):
         self.state = initial_state
 
     def step(self) -> None:
-        # Since we handle infection of susceptibles on the infector side, we don't
-        # need to implement any logic here for susceptible agents
         if self.state == InfectionState.INFECTED:
             # Either the agent recovers or spreads the virus with some probability
             if self.random.random() < self.model.recovery_prob:
-                self.state = InfectionState.SUSCEPTIBLE
+                self.state = InfectionState.RESISTANT  # Assume for now that recovered agents become immune
             else:
                 self.infect_neighbors()
+        elif self.state == InfectionState.SUSCEPTIBLE:
+            if self.random.random() < self.model.gain_resistance_prob:
+                self.state = InfectionState.RESISTANT
 
     def infect_neighbors(self) -> None:
         """
@@ -42,6 +44,7 @@ class CovidAgent(Agent):
         """
         for neighbor in self.neighbors:
             if (
+                # For now, we assume resistance is 100% effective
                 neighbor.state == InfectionState.SUSCEPTIBLE
                 and self.random.random() < self.model.infection_prob
             ):

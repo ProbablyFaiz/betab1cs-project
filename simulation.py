@@ -7,6 +7,7 @@ NUM_NODES = 500
 AVG_DEGREE = 10
 INFECTION_PROB = 0.01
 RECOVERY_PROB = 0.01
+GAIN_RESISTANCE_PROB = 0.01
 
 MAX_STEPS = 500
 INFECTION_THRESHOLD = 0.9
@@ -17,13 +18,21 @@ NUM_SIMULATIONS = 500
 
 def run_simulation(debug_output=False) -> int | None:
     """
-    Runs the COVID-19 model until the maximum number of steps or the infection threshold has been reached
+    Runs the COVID-19 model until the maximum number of steps, the disease has
+    been eradicated, or the infection threshold has been reached.
 
     :return: The number of steps simulated for the model before termination
     """
-    covid_model = CovidModel(NUM_NODES, AVG_DEGREE, INFECTION_PROB, RECOVERY_PROB)
+    covid_model = CovidModel(
+        NUM_NODES, AVG_DEGREE, INFECTION_PROB, RECOVERY_PROB, GAIN_RESISTANCE_PROB
+    )
     steps = 0
-    while steps < MAX_STEPS and termination_condition_unmet(covid_model):
+    while (
+        steps < MAX_STEPS
+        and covid_model.num_infected
+        > 0  # If COVID is completely eradicated, we can stop
+        and termination_condition_unmet(covid_model)
+    ):
         covid_model.step()
         steps += 1
     if debug_output:

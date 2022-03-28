@@ -14,6 +14,7 @@ class CovidModel(Model):
     grid: NetworkGrid
     infection_prob: float
     recovery_prob: float
+    gain_resistance_prob: float
 
     def __init__(
         self,
@@ -21,6 +22,7 @@ class CovidModel(Model):
         avg_degree=10,
         infection_prob=0.1,
         recovery_prob=0.01,
+        gain_resistance_prob=0.01,
     ):
         """
         Initializes the COVID model.
@@ -34,6 +36,7 @@ class CovidModel(Model):
         super().__init__()
         self.recovery_prob = recovery_prob
         self.infection_prob = infection_prob
+        self.gain_resistance_prob = gain_resistance_prob
 
         self.schedule = RandomActivation(self)
         edge_probability = avg_degree / num_nodes
