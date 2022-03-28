@@ -10,7 +10,7 @@ from agent import CovidAgent, InfectionState
 
 
 class CovidModel(Model):
-    network: nx.Graph
+    G: nx.Graph
     grid: NetworkGrid
     infection_prob: float
     recovery_prob: float
@@ -37,8 +37,8 @@ class CovidModel(Model):
 
         self.schedule = RandomActivation(self)
         edge_probability = avg_degree / num_nodes
-        self.network = nx.erdos_renyi_graph(num_nodes, edge_probability)
-        self.grid = NetworkGrid(self.network)
+        self.G = nx.erdos_renyi_graph(num_nodes, edge_probability)
+        self.grid = NetworkGrid(self.G)
 
         self.datacollector = DataCollector(
             {
@@ -48,7 +48,7 @@ class CovidModel(Model):
         )
 
         # Initialize agents
-        for i, node in enumerate(self.network.nodes):
+        for i, node in enumerate(self.G.nodes):
             # Infect only one node to start with
             infection_state = (
                 InfectionState.SUSCEPTIBLE if i > 0 else InfectionState.INFECTED
