@@ -6,7 +6,7 @@ from mesa.space import NetworkGrid
 from mesa.datacollection import DataCollector
 import networkx as nx
 
-from agent import InfectionState, CovidAgent
+from agent import CovidAgent, InfectionState
 
 
 class CovidModel(Model):

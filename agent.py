@@ -1,9 +1,10 @@
 from enum import Enum
-from typing import cast
+from typing import cast, TYPE_CHECKING
 
 from mesa import Agent
 
-from project.model import CovidModel
+if TYPE_CHECKING:
+    from model import CovidModel
 
 
 class InfectionState(int, Enum):
@@ -16,11 +17,11 @@ class InfectionState(int, Enum):
 
 
 class CovidAgent(Agent):
-    model: CovidModel
+    model: "CovidModel"
     state: InfectionState
 
     def __init__(
-        self, unique_id: int, model: CovidModel, initial_state: InfectionState
+        self, unique_id: int, model: "CovidModel", initial_state: InfectionState
     ):
         super().__init__(unique_id, model)
         self.state = initial_state
