@@ -75,3 +75,7 @@ class CovidModel(Model):
     @property
     def agents(self) -> list[CovidAgent]:
         return cast(list[CovidAgent], self.grid.get_all_cell_contents())
+
+    @property
+    def summary(self) -> str:
+        return f"Susceptible: {self.num_susceptible}\nInfected: {self.num_infected}"
