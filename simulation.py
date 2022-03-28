@@ -4,10 +4,11 @@ from multiprocessing import Pool
 from model import CovidModel
 
 NUM_NODES = 500
-AVG_DEGREE = 10
-INFECTION_PROB = 0.01
+AVG_DEGREE = 4
+INFECTION_PROB = 0.1
 RECOVERY_PROB = 0.01
 GAIN_RESISTANCE_PROB = 0.01
+RESISTANCE_LEVEL = 0.7
 
 MAX_STEPS = 500
 INFECTION_THRESHOLD = 0.9
@@ -24,7 +25,7 @@ def run_simulation(debug_output=False) -> int | None:
     :return: The number of steps simulated for the model before termination
     """
     covid_model = CovidModel(
-        NUM_NODES, AVG_DEGREE, INFECTION_PROB, RECOVERY_PROB, GAIN_RESISTANCE_PROB
+        NUM_NODES, AVG_DEGREE, INFECTION_PROB, RECOVERY_PROB, GAIN_RESISTANCE_PROB, RESISTANCE_LEVEL
     )
     steps = 0
     while (

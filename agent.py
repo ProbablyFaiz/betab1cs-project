@@ -31,7 +31,9 @@ class CovidAgent(Agent):
         if self.state == InfectionState.INFECTED:
             # Either the agent recovers or spreads the virus with some probability
             if self.random.random() < self.model.recovery_prob:
-                self.state = InfectionState.RESISTANT  # Assume for now that recovered agents become immune
+                self.state = (
+                    InfectionState.RESISTANT
+                )  # Assume for now that recovered agents become resistant
             else:
                 self.infect_neighbors()
         elif self.state == InfectionState.SUSCEPTIBLE:
@@ -43,12 +45,19 @@ class CovidAgent(Agent):
         Infect susceptible neighbors with probability model.infection_prob
         """
         for neighbor in self.neighbors:
-            if (
-                # For now, we assume resistance is 100% effective
-                neighbor.state == InfectionState.SUSCEPTIBLE
-                and self.random.random() < self.model.infection_prob
-            ):
+            if self.should_infect_neighbor(neighbor):
                 neighbor.state = InfectionState.INFECTED
+
+    def should_infect_neighbor(self, neighbor: "CovidAgent") -> bool:
+        # noinspection PyChainedComparisons
+        return (
+            neighbor.state == InfectionState.SUSCEPTIBLE
+            and self.random.random() < self.model.infection_prob
+        ) or (
+            neighbor.state == InfectionState.RESISTANT
+            and self.random.random() < self.model.infection_prob
+            and self.random.random() > self.model.resistance_level
+        )
 
     @property
     def neighbors(self) -> list["CovidAgent"]:

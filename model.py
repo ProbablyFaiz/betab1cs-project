@@ -15,6 +15,7 @@ class CovidModel(Model):
     infection_prob: float
     recovery_prob: float
     gain_resistance_prob: float
+    resistance_level: float
 
     def __init__(
         self,
@@ -23,20 +24,27 @@ class CovidModel(Model):
         infection_prob=0.1,
         recovery_prob=0.01,
         gain_resistance_prob=0.01,
+        resistance_level=1.0,
     ):
         """
         Initializes the COVID model.
 
         :param num_nodes: The number of nodes in the model
         :param avg_degree: The average degree of nodes in the model
-        :param infection_prob: Probability of an agent infecting a connected agent during a single time step
-        :param recovery_prob: The chance that an infected node recovers during a single time step
+        :param infection_prob: Probability of an agent infecting a
+        connected agent during a single time step
+        :param recovery_prob: The chance that an infected node recovers
+        during a single time step
+        :param resistance_level: The probability that a resistant agent will
+        resist an infection relative to a susceptible agent. Can be interpreted
+        as vaccine efficacy/protection against re-infection
         """
 
         super().__init__()
         self.recovery_prob = recovery_prob
         self.infection_prob = infection_prob
         self.gain_resistance_prob = gain_resistance_prob
+        self.resistance_level = resistance_level
 
         self.schedule = RandomActivation(self)
         edge_probability = avg_degree / num_nodes
