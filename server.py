@@ -1,26 +1,66 @@
-from mesa.visualization.modules import CanvasGrid
+import networkx as nx
+
 from mesa.visualization.ModularVisualization import ModularServer
-
+from mesa.visualization.modules import ChartModule
+from mesa.visualization.modules import NetworkModule
+from mesa.visualization.modules import TextElement
 from model import CovidModel
+from agent import CovidAgent, InfectionState
 
-# Function that describes how each cell will be portrayed in the visualization
-def portrayCell(cell):
-    assert cell is not None
-    return {
-        "Shape": "rect",
-        "w": 1,
-        "h": 1,
-        "Filled": "true",
-        "Layer": 0,
-        "x": cell.x,
-        "y": cell.y,
-        "Color": "black" if cell.state == cell.PRO else "white",
-    }
+STATE_COLOR_MAP = {
+    InfectionState.INFECTED: "#cc0000",
+    InfectionState.SUSCEPTIBLE: "#6aa84f",
+}
 
 
-# Make a world that is 100x100, on a 500x500 display.
-canvas_element = CanvasGrid(portrayCell, 100, 100, 500, 500)
+def network_portrayal(network: nx.Graph):
+    def node_color(agent: CovidAgent) -> str:
+        return STATE_COLOR_MAP[agent.state]
 
-server = ModularServer(
-    CovidModel, [canvas_element], "Covid Infection Model", {"height": 100, "width": 100}
+    def edge_color(agent1: CovidAgent, agent2: CovidAgent) -> str:
+        return "#e8e8e8"
+
+    def edge_width(agent1: CovidAgent, agent2: CovidAgent) -> int:
+        return 2
+
+    def get_agents(source, target):
+        return network.nodes[source]["agent"][0], network.nodes[target]["agent"][0]
+
+    portrayal = dict()
+    portrayal["nodes"] = [
+        {
+            "size": 6,
+            "color": node_color(agent),
+            "tooltip": f"{agent.unique_id}: {agent.state.name}",
+        }
+        for (_, (agent,)) in network.nodes.data("agent")
+    ]
+
+    portrayal["edges"] = [
+        {
+            "source": source,
+            "target": target,
+            "color": edge_color(*get_agents(source, target)),
+            "width": edge_width(*get_agents(source, target)),
+        }
+        for (source, target) in network.edges
+    ]
+
+    return portrayal
+
+
+network = NetworkModule(network_portrayal, 500, 500, library="d3")
+chart = ChartModule(
+    [
+        {"Label": "Infected", "Color": STATE_COLOR_MAP[InfectionState.INFECTED]},
+        {"Label": "Susceptible", "Color": STATE_COLOR_MAP[InfectionState.SUSCEPTIBLE]},
+    ]
 )
+
+
+class ModelInfo(TextElement):
+    def render(self, model: CovidModel):
+        return f"{model.num_infected} infected, {model.num_susceptible} susceptible"
+
+
+server = ModularServer(CovidModel, [network, ModelInfo(), chart], "COVID-19 Model")
