@@ -3,13 +3,6 @@ from multiprocessing import Pool, cpu_count
 
 from model import CovidModel
 
-NUM_NODES = 500
-AVG_DEGREE = 4
-INFECTION_PROB = 0.1
-RECOVERY_PROB = 0.01
-GAIN_RESISTANCE_PROB = 0.01
-RESISTANCE_LEVEL = 0.7
-
 MAX_STEPS = 500
 INFECTION_THRESHOLD = 0.9
 
@@ -17,16 +10,14 @@ NUM_PROCESSES = max(int(cpu_count() / 2), 1)
 NUM_SIMULATIONS = 500
 
 
-def run_simulation(debug_output=False) -> int | None:
+def run_simulation(model_params: dict, debug_output=False) -> int | None:
     """
     Runs the COVID-19 model until the maximum number of steps, the disease has
     been eradicated, or the infection threshold has been reached.
 
     :return: The number of steps simulated for the model before termination
     """
-    covid_model = CovidModel(
-        NUM_NODES, AVG_DEGREE, INFECTION_PROB, RECOVERY_PROB, GAIN_RESISTANCE_PROB, RESISTANCE_LEVEL
-    )
+    covid_model = CovidModel(**model_params)
     steps = 0
     while (
         steps < MAX_STEPS
@@ -48,10 +39,18 @@ def termination_condition_unmet(covid_model: CovidModel) -> bool:
     return covid_model.num_infected / len(covid_model.agents) < INFECTION_THRESHOLD
 
 
-if __name__ == "__main__":
-    print("Running simulations...")
+def run_simulation_set(model_params: dict):
+    print(
+        f"""
+Running {NUM_SIMULATIONS} simulations with configuration:
+Infection probability: {model_params["infection_prob"]}, average degree: {model_params["avg_degree"]},
+Gain resistance probability: {model_params["gain_resistance_prob"]}, resistance level: {model_params["resistance_level"]},
+Infection threshold: {INFECTION_THRESHOLD}, maximum time steps: {MAX_STEPS}"""
+    )
     with Pool(NUM_PROCESSES) as p:
-        step_counts = p.map(run_simulation, (False for _ in range(NUM_SIMULATIONS)))
+        step_counts = p.map(
+            run_simulation, (model_params for _ in range(NUM_SIMULATIONS))
+        )
     terminated_step_counts = [c for c in step_counts if c is not None]
     num_unterminated = sum(1 for c in step_counts if c is None)
     average_step_count = (
@@ -60,13 +59,41 @@ if __name__ == "__main__":
         else None
     )
     print(
-        f"""Results of {NUM_SIMULATIONS} simulations:
-Parameters
-----------
-Infection probability: {INFECTION_PROB}, average degree: {AVG_DEGREE},
-Infection threshold: {INFECTION_THRESHOLD}, maximum time steps: {MAX_STEPS}
-
-Infectivity threshold reached: {len(terminated_step_counts)} (average steps: {average_step_count})
-Not reached: {num_unterminated}"""
+        f"""
+Results
+-------
+Infection threshold reached: {len(terminated_step_counts)} (average steps: {average_step_count})
+Not reached: {num_unterminated}
+"""
     )
-    print(f"")
+
+
+if __name__ == "__main__":
+    run_configurations = [
+        {
+            "avg_degree": 10,
+            "infection_prob": 0.1,
+            "gain_resistance_prob": 0.01,
+            "resistance_level": 0.9,
+        },
+        {
+            "avg_degree": 10,
+            "infection_prob": 0.01,
+            "gain_resistance_prob": 0.01,
+            "resistance_level": 0.9,
+        },
+        {
+            "avg_degree": 4,
+            "infection_prob": 0.1,
+            "gain_resistance_prob": 0.01,
+            "resistance_level": 0.9,
+        },
+        {
+            "avg_degree": 4,
+            "infection_prob": 0.01,
+            "gain_resistance_prob": 0.01,
+            "resistance_level": 0.9,
+        },
+    ]
+    for config in run_configurations:
+        run_simulation_set(config)
