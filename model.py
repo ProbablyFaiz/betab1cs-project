@@ -1,4 +1,5 @@
-from collections import Counter
+from collections import Counter, defaultdict
+import csv
 from typing import cast
 from time import time
 
@@ -23,17 +24,19 @@ class CovidModel(Model):
     mutation_prob: float
 
     variant_code_map: dict[str, CovidVariant]
+    variant_data: list[list[tuple[CovidVariant, int]]]
 
     def __init__(
         self,
         num_nodes=500,
-        avg_degree=10,
+        avg_degree=4,
         infection_prob=0.1,
         recovery_prob=0.05,
         death_prob=0.001,
         gain_resistance_prob=0.01,
         resistance_level=1.0,
         mutation_prob=0.01,
+        genome_bits=8,
     ):
         """
         Initializes the COVID model.
@@ -62,11 +65,15 @@ class CovidModel(Model):
         self.gain_resistance_prob = gain_resistance_prob
         self.resistance_level = resistance_level
         self.mutation_prob = mutation_prob
+        self.genome_bits = genome_bits
 
         self.schedule = RandomActivation(self)
         edge_probability = avg_degree / num_nodes
         self.G = nx.erdos_renyi_graph(num_nodes, edge_probability)
         self.grid = NetworkGrid(self.G)
+
+        self.start_time = int(time() * 1000)
+        self.variant_data = []
 
         self.datacollector = DataCollector(
             {
@@ -92,25 +99,55 @@ class CovidModel(Model):
             self.schedule.add(agent)
             self.grid.place_agent(agent, node)
 
-        self.variant_file_name = f"output/variant_data-{int(time())}.csv"
-        with open(self.variant_file_name, "w") as f:
-            f.write("Variant,Time Step,Cases,Infectivity Rate,Death Rate\n")
-
     def step(self) -> None:
         self.datacollector.collect(self)
-        self.update_variant_csv()
+        self.variant_data.append(self.variant_frequency)
+        if self.schedule.steps % 25 == 0:
+            self.dump_variant_data()  # Not great to run this here, but fine for testing
         self.schedule.step()
 
-    def update_variant_csv(self):
+    def dump_variant_data(self):
         """
         A hacky way to dump variant data to a file so we can visualize it elsewhere
         """
-        with open(self.variant_file_name, "a") as f:
-            for variant, frequency in self.variant_frequency:
-                f.write(
-                    f"{variant.name},{self.schedule.steps},{frequency},{variant.base_infection_prob:3.2f},{variant.base_death_prob:3.2f}\n"
+        info_file_name = f"output/variant-info-{self.start_time}.csv"
+        with open(info_file_name, "w") as f:
+            writer = csv.writer(f)
+            writer.writerow(
+                [
+                    "Variant Code",
+                    "Maximum Cases",
+                    "Infection Probability",
+                    "Death Probability",
+                ]
+            )
+            max_cases_dict = defaultdict(lambda: -1)
+            for freq_info in self.variant_data:
+                for (variant, frequency) in freq_info:
+                    max_cases_dict[variant] = max(max_cases_dict[variant], frequency)
+            for variant, max_cases in max_cases_dict.items():
+                writer.writerow(
+                    [
+                        variant.name,
+                        max_cases,
+                        f"{variant.base_infection_prob:4.3f}",
+                        f"{variant.base_death_prob:5.4f}",
+                    ]
                 )
-        pass
+        time_series_file_name = f"output/variant-time-series-{self.start_time}.csv"
+        variant_order = sorted(
+            [variant for variant in max_cases_dict.keys()],
+            key=lambda v: int(v.name, 16),
+        )
+        with open(time_series_file_name, "w") as f:
+            writer = csv.writer(f)
+            writer.writerow(["Time Step"] + [v.name for v in variant_order])
+            for i, freq_info in enumerate(self.variant_data):
+                curr_row = [i]
+                freq_info_dict = defaultdict(lambda: 0, freq_info)
+                for variant in variant_order:
+                    curr_row.append(freq_info_dict[variant])
+                writer.writerow(curr_row)
 
     @property
     def num_susceptible(self) -> int:

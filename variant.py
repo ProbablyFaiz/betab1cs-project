@@ -1,14 +1,11 @@
 import random
-from math import log
+from math import log, ceil
 from typing import TYPE_CHECKING
 
 from BitVector import BitVector
 
 if TYPE_CHECKING:
     from model import CovidModel
-
-GENETIC_CODE_SIZE = 4
-MAX_HEX_NUMERALS = int(log(2**GENETIC_CODE_SIZE, 16))
 
 
 class CovidVariant:
@@ -25,7 +22,7 @@ class CovidVariant:
         genetic_code: BitVector = None,
     ):
         self.model = model
-        self.genetic_code = genetic_code or BitVector(size=GENETIC_CODE_SIZE)
+        self.genetic_code = genetic_code or BitVector(size=self.model.genome_bits)
         self.base_infection_prob = infection_prob
         self.base_death_prob = death_prob
 
@@ -70,7 +67,8 @@ class CovidVariant:
     @property
     def name(self) -> str:
         hex_code = self.genetic_code.get_bitvector_in_hex().upper()
-        if padding := MAX_HEX_NUMERALS - len(hex_code):
+        max_hex_numerals = ceil(log(2**self.model.genome_bits, 16))
+        if padding := max_hex_numerals - len(hex_code):
             hex_code = "0" * padding + hex_code
         return hex_code
 
