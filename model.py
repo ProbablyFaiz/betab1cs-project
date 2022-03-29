@@ -1,3 +1,4 @@
+from collections import Counter
 from typing import cast
 
 from mesa import Model
@@ -110,6 +111,16 @@ class CovidModel(Model):
     @property
     def agents(self) -> list[CovidAgent]:
         return cast(list[CovidAgent], self.grid.get_all_cell_contents())
+
+    def dominant_variants(self, n=3) -> list[tuple[str, int]]:
+        cnt = Counter(
+            (
+                agent.infection_variant.variant_code
+                for agent in self.agents
+                if agent.state == InfectionState.INFECTED
+            )
+        )
+        return cnt.most_common(n)
 
     @property
     def summary(self) -> str:

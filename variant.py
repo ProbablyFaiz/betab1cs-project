@@ -48,3 +48,7 @@ class CovidVariant:
             - (self.genetic_code ^ other.genetic_code).count_bits()
             / self.genetic_code.size
         )
+
+    @property
+    def variant_code(self) -> str:
+        return self.genetic_code.get_bitvector_in_hex()

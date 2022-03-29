@@ -68,7 +68,9 @@ class ModelInfo(TextElement):
             f"{model.num_infected} infected, "
             f"{model.num_susceptible} susceptible, "
             f"{model.num_resistant} resistant, "
-            f"{model.num_dead} dead"
+            f"{model.num_dead} dead<br>"
+            "Dominant variants: "
+            f"{', '.join([f'{variant} ({freq})' for (variant, freq) in model.dominant_variants()])}"
         )
 
 
