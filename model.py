@@ -1,5 +1,6 @@
 from collections import Counter
 from typing import cast
+from time import time
 
 from mesa import Model
 from mesa.time import RandomActivation
@@ -91,9 +92,25 @@ class CovidModel(Model):
             self.schedule.add(agent)
             self.grid.place_agent(agent, node)
 
+        self.variant_file_name = f"output/variant_data-{int(time())}.csv"
+        with open(self.variant_file_name, "w") as f:
+            f.write("Variant,Time Step,Cases,Infectivity Rate,Death Rate\n")
+
     def step(self) -> None:
         self.datacollector.collect(self)
+        self.update_variant_csv()
         self.schedule.step()
+
+    def update_variant_csv(self):
+        """
+        A hacky way to dump variant data to a file so we can visualize it elsewhere
+        """
+        with open(self.variant_file_name, "a") as f:
+            for variant, frequency in self.variant_frequency:
+                f.write(
+                    f"{variant.name},{self.schedule.steps},{frequency},{variant.base_infection_prob:3.2f},{variant.base_death_prob:3.2f}\n"
+                )
+        pass
 
     @property
     def num_susceptible(self) -> int:
@@ -127,7 +144,10 @@ class CovidModel(Model):
                 if agent.state == InfectionState.INFECTED
             )
         )
-        return sorted(counter.items(), key=lambda t: t[1], reverse=True)
+        return cast(
+            list[tuple[CovidVariant, int]],
+            sorted(counter.items(), key=lambda t: t[1], reverse=True),
+        )
 
     @property
     def summary(self) -> str:

@@ -56,7 +56,7 @@ class CovidAgent(Agent):
             else:
                 self.infect_neighbors()
         elif self.state == InfectionState.SUSCEPTIBLE:
-            if self.model.schedule.steps > 50 and self.random.random() < self.model.gain_resistance_prob:
+            if self.random.random() < self.model.gain_resistance_prob:
                 self.state = InfectionState.RESISTANT
                 self.immune_memory.append(
                     CovidVariant(self.model, 0, 0)
