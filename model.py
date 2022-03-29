@@ -27,7 +27,7 @@ class CovidModel(Model):
         avg_degree=10,
         infection_prob=0.1,
         recovery_prob=0.1,
-        death_prob=0.001,
+        death_prob=0.005,
         gain_resistance_prob=0.01,
         resistance_level=1.0,
         mutation_prob=0.01,
@@ -71,6 +71,7 @@ class CovidModel(Model):
                 "Infected": "num_infected",
                 "Resistant": "num_resistant",
                 "Dead": "num_dead",
+                "Variants": "variants",
             }
         )
 
@@ -112,15 +113,18 @@ class CovidModel(Model):
     def agents(self) -> list[CovidAgent]:
         return cast(list[CovidAgent], self.grid.get_all_cell_contents())
 
-    def dominant_variants(self, n=3) -> list[tuple[str, int]]:
-        cnt = Counter(
+    @property
+    def variants(self) -> Counter:
+        return Counter(
             (
                 agent.infection_variant.variant_code
                 for agent in self.agents
                 if agent.state == InfectionState.INFECTED
             )
         )
-        return cnt.most_common(n)
+
+    def dominant_variants(self, n=3) -> list[tuple[str, int]]:
+        return self.variants.most_common(n)
 
     @property
     def summary(self) -> str:

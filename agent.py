@@ -20,6 +20,7 @@ class InfectionState(int, Enum):
     DEAD = 3
 
 
+# noinspection PyChainedComparisons
 class CovidAgent(Agent):
     model: "CovidModel"
     state: InfectionState
@@ -47,7 +48,10 @@ class CovidAgent(Agent):
                 self.state = InfectionState.RESISTANT
                 self.immune_memory.append(self.infection_variant)
                 self.infection_variant = None
-            elif self.random.random() < self.model.death_prob:
+            elif (
+                self.random.random() < self.model.death_prob
+                and self.random.random() > self.death_resistance_level
+            ):
                 self.state = InfectionState.DEAD
             else:
                 self.infect_neighbors()
@@ -66,22 +70,33 @@ class CovidAgent(Agent):
             neighbor.try_infect(self.infection_variant)
 
     def try_infect(self, variant: CovidVariant) -> None:
-        # noinspection PyChainedComparisons
         if (
-            self.state == InfectionState.SUSCEPTIBLE
+            self.state in (InfectionState.SUSCEPTIBLE, InfectionState.RESISTANT)
             and self.random.random() < variant.base_infection_prob
-        ) or (
-            self.state == InfectionState.RESISTANT
-            and self.random.random() < variant.base_infection_prob
-            and self.random.random() > self.resistance_level(variant)
+            and self.random.random() > self.infection_resistance_level(variant)
         ):
             self.state = InfectionState.INFECTED
             self.infection_variant = variant.child_variant(self.model.mutation_prob)
 
-    def resistance_level(self, variant: CovidVariant) -> float:
-        return max(
-            remembered_variant.similarity(variant)
-            for remembered_variant in self.immune_memory
+    def infection_resistance_level(self, variant: CovidVariant) -> float:
+        return (
+            max(
+                remembered_variant.similarity(variant)
+                for remembered_variant in self.immune_memory
+            )
+            if len(self.immune_memory)
+            else 0
+        )
+
+    @property
+    def death_resistance_level(self) -> float:
+        return (
+            max(
+                remembered_variant.similarity(self.infection_variant)
+                for remembered_variant in self.immune_memory
+            )
+            if len(self.immune_memory)
+            else 0
         )
 
     @property
