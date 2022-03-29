@@ -23,7 +23,9 @@ class InfectionState(int, Enum):
 class CovidAgent(Agent):
     model: "CovidModel"
     state: InfectionState
-    infection_variant: CovidVariant
+    infection_variant: CovidVariant | None
+
+    immune_memory: list[CovidVariant]
 
     def __init__(
         self,
@@ -34,15 +36,17 @@ class CovidAgent(Agent):
     ):
         super().__init__(unique_id, model)
         self.state = initial_state
-        if initial_state == InfectionState.INFECTED:
-            self.infection_variant = infection_variant
+        self.immune_memory = []
+        self.infection_variant = infection_variant
 
     def step(self) -> None:
         if self.state == InfectionState.INFECTED:
             # Either the agent recovers or spreads the virus with some probability
             if self.random.random() < self.model.recovery_prob:
-                # Assume for now that recovered agents become resistant
+                # Recovered agents become resistant
                 self.state = InfectionState.RESISTANT
+                self.immune_memory.append(self.infection_variant)
+                self.infection_variant = None
             elif self.random.random() < self.model.death_prob:
                 self.state = InfectionState.DEAD
             else:
@@ -50,7 +54,9 @@ class CovidAgent(Agent):
         elif self.state == InfectionState.SUSCEPTIBLE:
             if self.random.random() < self.model.gain_resistance_prob:
                 self.state = InfectionState.RESISTANT
-                self.infection_variant = CovidVariant(0, 0)  # Vaccine immunity, not contagious
+                self.immune_memory.append(
+                    CovidVariant(0, 0)
+                )  # Vaccine immunity, not contagious
 
     def infect_neighbors(self) -> None:
         """
@@ -73,7 +79,10 @@ class CovidAgent(Agent):
             self.infection_variant = variant.child_variant(self.model.mutation_prob)
 
     def resistance_level(self, variant: CovidVariant) -> float:
-        return self.infection_variant.similarity(variant)
+        return max(
+            remembered_variant.similarity(variant)
+            for remembered_variant in self.immune_memory
+        )
 
     @property
     def neighbors(self) -> list["CovidAgent"]:

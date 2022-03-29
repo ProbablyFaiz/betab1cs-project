@@ -3,7 +3,7 @@ from math import sqrt
 
 from BitVector import BitVector
 
-GENETIC_CODE_SIZE = 16
+GENETIC_CODE_SIZE = 4
 
 
 class CovidVariant:
@@ -51,4 +51,4 @@ class CovidVariant:
 
     @property
     def variant_code(self) -> str:
-        return self.genetic_code.get_bitvector_in_hex()
+        return self.genetic_code.get_bitvector_in_hex().upper()
