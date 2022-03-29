@@ -56,10 +56,10 @@ class CovidAgent(Agent):
             else:
                 self.infect_neighbors()
         elif self.state == InfectionState.SUSCEPTIBLE:
-            if self.random.random() < self.model.gain_resistance_prob:
+            if self.model.schedule.steps > 50 and self.random.random() < self.model.gain_resistance_prob:
                 self.state = InfectionState.RESISTANT
                 self.immune_memory.append(
-                    CovidVariant(0, 0)
+                    CovidVariant(self.model, 0, 0)
                 )  # Vaccine immunity, not contagious
 
     def infect_neighbors(self) -> None:
@@ -76,27 +76,25 @@ class CovidAgent(Agent):
             and self.random.random() > self.infection_resistance_level(variant)
         ):
             self.state = InfectionState.INFECTED
-            self.infection_variant = variant.child_variant(self.model.mutation_prob)
+            self.infection_variant = variant.child_variant()
 
     def infection_resistance_level(self, variant: CovidVariant) -> float:
-        return (
-            max(
+        return max(
+            (
                 remembered_variant.similarity(variant)
                 for remembered_variant in self.immune_memory
-            )
-            if len(self.immune_memory)
-            else 0
+            ),
+            default=0,
         )
 
     @property
     def death_resistance_level(self) -> float:
-        return (
-            max(
+        return max(
+            (
                 remembered_variant.similarity(self.infection_variant)
                 for remembered_variant in self.immune_memory
-            )
-            if len(self.immune_memory)
-            else 0
+            ),
+            default=0,
         )
 
     @property

@@ -21,13 +21,15 @@ class CovidModel(Model):
     resistance_level: float
     mutation_prob: float
 
+    variant_code_map: dict[str, CovidVariant]
+
     def __init__(
         self,
         num_nodes=500,
         avg_degree=10,
         infection_prob=0.1,
-        recovery_prob=0.1,
-        death_prob=0.005,
+        recovery_prob=0.05,
+        death_prob=0.001,
         gain_resistance_prob=0.01,
         resistance_level=1.0,
         mutation_prob=0.01,
@@ -71,7 +73,7 @@ class CovidModel(Model):
                 "Infected": "num_infected",
                 "Resistant": "num_resistant",
                 "Dead": "num_dead",
-                "Variants": "variants",
+                "Variants": "variant_frequency",
             }
         )
 
@@ -79,7 +81,10 @@ class CovidModel(Model):
         for i, node in enumerate(self.G.nodes):
             agent: CovidAgent
             if i == 0:
-                variant = CovidVariant(self.infection_prob, self.death_prob)
+                variant = CovidVariant(self, self.infection_prob, self.death_prob)
+                self.variant_code_map = {
+                    variant.genetic_code.get_bitvector_in_hex(): variant
+                }
                 agent = CovidAgent(i, self, InfectionState.INFECTED, variant)
             else:
                 agent = CovidAgent(i, self, InfectionState.SUSCEPTIBLE)
@@ -114,17 +119,15 @@ class CovidModel(Model):
         return cast(list[CovidAgent], self.grid.get_all_cell_contents())
 
     @property
-    def variants(self) -> Counter:
-        return Counter(
+    def variant_frequency(self) -> list[tuple[CovidVariant, int]]:
+        counter: dict[CovidVariant, int] = Counter(
             (
-                agent.infection_variant.variant_code
+                agent.infection_variant
                 for agent in self.agents
                 if agent.state == InfectionState.INFECTED
             )
         )
-
-    def dominant_variants(self, n=3) -> list[tuple[str, int]]:
-        return self.variants.most_common(n)
+        return sorted(counter.items(), key=lambda t: t[1], reverse=True)
 
     @property
     def summary(self) -> str:
