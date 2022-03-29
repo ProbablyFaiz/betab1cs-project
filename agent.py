@@ -15,6 +15,7 @@ class InfectionState(int, Enum):
     SUSCEPTIBLE = 0
     INFECTED = 1
     RESISTANT = 2
+    DEAD = 3
 
 
 class CovidAgent(Agent):
@@ -31,9 +32,10 @@ class CovidAgent(Agent):
         if self.state == InfectionState.INFECTED:
             # Either the agent recovers or spreads the virus with some probability
             if self.random.random() < self.model.recovery_prob:
-                self.state = (
-                    InfectionState.RESISTANT
-                )  # Assume for now that recovered agents become resistant
+                # Assume for now that recovered agents become resistant
+                self.state = InfectionState.RESISTANT
+            elif self.random.random() < self.model.death_prob:
+                self.state = InfectionState.DEAD
             else:
                 self.infect_neighbors()
         elif self.state == InfectionState.SUSCEPTIBLE:
