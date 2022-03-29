@@ -3,7 +3,7 @@ from typing import cast, TYPE_CHECKING
 
 from mesa import Agent
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # Avoids circular import issues
     from model import CovidModel
 
 

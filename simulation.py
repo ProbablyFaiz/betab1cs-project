@@ -21,8 +21,8 @@ def run_simulation(model_params: dict, debug_output=False) -> int | None:
     steps = 0
     while (
         steps < MAX_STEPS
-        and covid_model.num_infected
-        > 0  # If COVID is completely eradicated, we can stop
+        # If COVID is completely eradicated, we can stop
+        and covid_model.num_infected > 0
         and termination_condition_unmet(covid_model)
     ):
         covid_model.step()
@@ -53,11 +53,7 @@ Infection threshold: {INFECTION_THRESHOLD}, maximum time steps: {MAX_STEPS}"""
         )
     terminated_step_counts = [c for c in step_counts if c is not None]
     num_unterminated = sum(1 for c in step_counts if c is None)
-    average_step_count = (
-        sum(terminated_step_counts) / len(terminated_step_counts)
-        if len(terminated_step_counts) > 0
-        else None
-    )
+    average_step_count = sum(terminated_step_counts) / len(terminated_step_counts)
     print(
         f"""
 Results
@@ -74,25 +70,25 @@ if __name__ == "__main__":
             "avg_degree": 10,
             "infection_prob": 0.1,
             "gain_resistance_prob": 0.01,
-            "resistance_level": 0.9,
+            "resistance_level": 0.5,
         },
         {
             "avg_degree": 10,
             "infection_prob": 0.01,
             "gain_resistance_prob": 0.01,
-            "resistance_level": 0.9,
+            "resistance_level": 0.5,
         },
         {
             "avg_degree": 4,
             "infection_prob": 0.1,
             "gain_resistance_prob": 0.01,
-            "resistance_level": 0.9,
+            "resistance_level": 0.5,
         },
         {
             "avg_degree": 4,
             "infection_prob": 0.01,
             "gain_resistance_prob": 0.01,
-            "resistance_level": 0.9,
+            "resistance_level": 0.5,
         },
     ]
     for config in run_configurations:
