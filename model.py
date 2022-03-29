@@ -7,6 +7,7 @@ from mesa.datacollection import DataCollector
 import networkx as nx
 
 from agent import CovidAgent, InfectionState
+from variant import CovidVariant
 
 
 class CovidModel(Model):
@@ -17,16 +18,18 @@ class CovidModel(Model):
     death_prob: float
     gain_resistance_prob: float
     resistance_level: float
+    mutation_prob: float
 
     def __init__(
         self,
         num_nodes=500,
         avg_degree=10,
         infection_prob=0.1,
-        recovery_prob=0.01,
-        death_prob=0.005,
+        recovery_prob=0.1,
+        death_prob=0.001,
         gain_resistance_prob=0.01,
         resistance_level=1.0,
+        mutation_prob=0.01,
     ):
         """
         Initializes the COVID model.
@@ -44,6 +47,8 @@ class CovidModel(Model):
         :param resistance_level: The probability that a resistant agent will
         resist an infection relative to a susceptible agent. Can be interpreted
         as vaccine efficacy/protection against re-infection
+        :param mutation_prob: The probability that a given bit of a virus'
+        genetic code will flip
         """
 
         super().__init__()
@@ -52,6 +57,7 @@ class CovidModel(Model):
         self.death_prob = death_prob
         self.gain_resistance_prob = gain_resistance_prob
         self.resistance_level = resistance_level
+        self.mutation_prob = mutation_prob
 
         self.schedule = RandomActivation(self)
         edge_probability = avg_degree / num_nodes
@@ -69,11 +75,12 @@ class CovidModel(Model):
 
         # Initialize agents
         for i, node in enumerate(self.G.nodes):
-            # Infect only one node to start with
-            infection_state = (
-                InfectionState.SUSCEPTIBLE if i > 0 else InfectionState.INFECTED
-            )
-            agent = CovidAgent(i, self, infection_state)
+            agent: CovidAgent
+            if i == 0:
+                variant = CovidVariant(self.infection_prob, self.death_prob)
+                agent = CovidAgent(i, self, InfectionState.INFECTED, variant)
+            else:
+                agent = CovidAgent(i, self, InfectionState.SUSCEPTIBLE)
             self.schedule.add(agent)
             self.grid.place_agent(agent, node)
 

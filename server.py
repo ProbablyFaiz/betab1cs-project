@@ -33,7 +33,7 @@ def network_portrayal(network: nx.Graph):
         {
             "size": 6,
             "color": node_color(agent),
-            "tooltip": f"{agent.unique_id}: {agent.state.name}"
+            "tooltip": f"{agent.unique_id}: {agent.state.name}",
         }
         for (_, (agent,)) in network.nodes.data("agent")
     ]

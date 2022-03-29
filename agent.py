@@ -3,6 +3,8 @@ from typing import cast, TYPE_CHECKING
 
 from mesa import Agent
 
+from variant import CovidVariant
+
 if TYPE_CHECKING:  # Avoids circular import issues
     from model import CovidModel
 
@@ -21,12 +23,19 @@ class InfectionState(int, Enum):
 class CovidAgent(Agent):
     model: "CovidModel"
     state: InfectionState
+    infection_variant: CovidVariant
 
     def __init__(
-        self, unique_id: int, model: "CovidModel", initial_state: InfectionState
+        self,
+        unique_id: int,
+        model: "CovidModel",
+        initial_state: InfectionState,
+        infection_variant: CovidVariant = None,
     ):
         super().__init__(unique_id, model)
         self.state = initial_state
+        if initial_state == InfectionState.INFECTED:
+            self.infection_variant = infection_variant
 
     def step(self) -> None:
         if self.state == InfectionState.INFECTED:
@@ -41,25 +50,30 @@ class CovidAgent(Agent):
         elif self.state == InfectionState.SUSCEPTIBLE:
             if self.random.random() < self.model.gain_resistance_prob:
                 self.state = InfectionState.RESISTANT
+                self.infection_variant = CovidVariant(0, 0)  # Vaccine immunity, not contagious
 
     def infect_neighbors(self) -> None:
         """
         Infect susceptible neighbors with probability model.infection_prob
         """
         for neighbor in self.neighbors:
-            if self.should_infect_neighbor(neighbor):
-                neighbor.state = InfectionState.INFECTED
+            neighbor.try_infect(self.infection_variant)
 
-    def should_infect_neighbor(self, neighbor: "CovidAgent") -> bool:
+    def try_infect(self, variant: CovidVariant) -> None:
         # noinspection PyChainedComparisons
-        return (
-            neighbor.state == InfectionState.SUSCEPTIBLE
-            and self.random.random() < self.model.infection_prob
+        if (
+            self.state == InfectionState.SUSCEPTIBLE
+            and self.random.random() < variant.base_infection_prob
         ) or (
-            neighbor.state == InfectionState.RESISTANT
-            and self.random.random() < self.model.infection_prob
-            and self.random.random() > self.model.resistance_level
-        )
+            self.state == InfectionState.RESISTANT
+            and self.random.random() < variant.base_infection_prob
+            and self.random.random() > self.resistance_level(variant)
+        ):
+            self.state = InfectionState.INFECTED
+            self.infection_variant = variant.child_variant(self.model.mutation_prob)
+
+    def resistance_level(self, variant: CovidVariant) -> float:
+        return self.infection_variant.similarity(variant)
 
     @property
     def neighbors(self) -> list["CovidAgent"]:
