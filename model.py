@@ -14,6 +14,7 @@ class CovidModel(Model):
     grid: NetworkGrid
     infection_prob: float
     recovery_prob: float
+    death_prob: float
     gain_resistance_prob: float
     resistance_level: float
 
@@ -23,6 +24,7 @@ class CovidModel(Model):
         avg_degree=10,
         infection_prob=0.1,
         recovery_prob=0.01,
+        death_prob=0.005,
         gain_resistance_prob=0.01,
         resistance_level=1.0,
     ):
@@ -33,16 +35,21 @@ class CovidModel(Model):
         :param avg_degree: The average degree of nodes in the model
         :param infection_prob: Probability of an agent infecting a
         connected agent during a single time step
-        :param recovery_prob: The chance that an infected node recovers
+        :param recovery_prob: The chance that an infected agent recovers
         during a single time step
+        :param death_prob: The chance that an infected agent dies during a
+        single time step
+        :param gain_resistance_prob: The chance that a susceptible agent will
+        gain resistance during a single time step (e.g. through vaccination)
         :param resistance_level: The probability that a resistant agent will
         resist an infection relative to a susceptible agent. Can be interpreted
         as vaccine efficacy/protection against re-infection
         """
 
         super().__init__()
-        self.recovery_prob = recovery_prob
         self.infection_prob = infection_prob
+        self.recovery_prob = recovery_prob
+        self.death_prob = death_prob
         self.gain_resistance_prob = gain_resistance_prob
         self.resistance_level = resistance_level
 
@@ -55,6 +62,8 @@ class CovidModel(Model):
             {
                 "Susceptible": "num_susceptible",
                 "Infected": "num_infected",
+                "Resistant": "num_resistant",
+                "Dead": "num_dead",
             }
         )
 
@@ -80,6 +89,14 @@ class CovidModel(Model):
     def num_infected(self) -> int:
         return self.num_with_state(InfectionState.INFECTED)
 
+    @property
+    def num_resistant(self) -> int:
+        return self.num_with_state(InfectionState.RESISTANT)
+
+    @property
+    def num_dead(self) -> int:
+        return self.num_with_state(InfectionState.DEAD)
+
     def num_with_state(self, state: InfectionState) -> int:
         return sum(1 for agent in self.agents if agent.state == state)
 
@@ -89,4 +106,9 @@ class CovidModel(Model):
 
     @property
     def summary(self) -> str:
-        return f"Susceptible: {self.num_susceptible}\nInfected: {self.num_infected}"
+        return (
+            f"Susceptible: {self.num_susceptible}"
+            f"\nInfected: {self.num_infected}"
+            f"\nResistant: {self.num_resistant}"
+            f"\nDead: {self.num_dead}"
+        )
