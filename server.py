@@ -34,6 +34,7 @@ def network_portrayal(network: nx.Graph):
             "size": 6,
             "color": node_color(agent),
             "tooltip": f"{agent.unique_id}: {agent.state.name}"
+            + f"{f'Resistance Level: {agent.resistance_level}' if agent.state == InfectionState.RESISTANT else ''}",
         }
         for (_, (agent,)) in network.nodes.data("agent")
     ]

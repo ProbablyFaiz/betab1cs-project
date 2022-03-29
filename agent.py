@@ -21,6 +21,7 @@ class InfectionState(int, Enum):
 class CovidAgent(Agent):
     model: "CovidModel"
     state: InfectionState
+    resistance_age: int
 
     def __init__(
         self, unique_id: int, model: "CovidModel", initial_state: InfectionState
@@ -33,32 +34,49 @@ class CovidAgent(Agent):
             # Either the agent recovers or spreads the virus with some probability
             if self.random.random() < self.model.recovery_prob:
                 # Assume for now that recovered agents become resistant
-                self.state = InfectionState.RESISTANT
+                self.become_resistant()
             elif self.random.random() < self.model.death_prob:
                 self.state = InfectionState.DEAD
             else:
                 self.infect_neighbors()
         elif self.state == InfectionState.SUSCEPTIBLE:
             if self.random.random() < self.model.gain_resistance_prob:
-                self.state = InfectionState.RESISTANT
+                self.become_resistant()
+        elif self.state == InfectionState.RESISTANT:
+            self.resistance_age += 1
+            if self.resistance_level <= 0:
+                self.state = InfectionState.SUSCEPTIBLE
+
+    def become_resistant(self):
+        self.state = InfectionState.RESISTANT
+        self.resistance_age = 0
 
     def infect_neighbors(self) -> None:
         """
         Infect susceptible neighbors with probability model.infection_prob
         """
         for neighbor in self.neighbors:
-            if self.should_infect_neighbor(neighbor):
-                neighbor.state = InfectionState.INFECTED
+            neighbor.try_infect()
 
-    def should_infect_neighbor(self, neighbor: "CovidAgent") -> bool:
+    def try_infect(self) -> None:
+        """
+        Tries to infect the agent that this method belongs to with COVID
+        """
         # noinspection PyChainedComparisons
-        return (
-            neighbor.state == InfectionState.SUSCEPTIBLE
+        if (
+            self.state == InfectionState.SUSCEPTIBLE
             and self.random.random() < self.model.infection_prob
         ) or (
-            neighbor.state == InfectionState.RESISTANT
+            self.state == InfectionState.RESISTANT
             and self.random.random() < self.model.infection_prob
-            and self.random.random() > self.model.resistance_level
+            and self.random.random() > self.resistance_level
+        ):
+            self.state = InfectionState.INFECTED
+
+    @property
+    def resistance_level(self) -> float:
+        return self.model.resistance_level - self.model.resistance_decay * (
+            self.resistance_age**2
         )
 
     @property

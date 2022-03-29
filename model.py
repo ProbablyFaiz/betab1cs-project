@@ -17,16 +17,18 @@ class CovidModel(Model):
     death_prob: float
     gain_resistance_prob: float
     resistance_level: float
+    resistance_decay: float
 
     def __init__(
         self,
         num_nodes=500,
         avg_degree=10,
         infection_prob=0.1,
-        recovery_prob=0.01,
+        recovery_prob=0.05,
         death_prob=0.005,
         gain_resistance_prob=0.01,
-        resistance_level=1.0,
+        resistance_level=0.9,
+        resistance_decay=0.0001,
     ):
         """
         Initializes the COVID model.
@@ -43,6 +45,8 @@ class CovidModel(Model):
         gain resistance during a single time step (e.g. through vaccination)
         :param resistance_level: The probability that a resistant agent will
         resist an infection relative to a susceptible agent. Can be interpreted
+        :param resistance_decay: The decay constant of resistance per time step
+        resistance = resistance_level - resistance_decay * (time since resistance acquired)^2
         as vaccine efficacy/protection against re-infection
         """
 
@@ -52,6 +56,7 @@ class CovidModel(Model):
         self.death_prob = death_prob
         self.gain_resistance_prob = gain_resistance_prob
         self.resistance_level = resistance_level
+        self.resistance_decay = resistance_decay
 
         self.schedule = RandomActivation(self)
         edge_probability = avg_degree / num_nodes
