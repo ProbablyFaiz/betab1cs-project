@@ -1,4 +1,4 @@
-# COVID-19 ABM Model
+# COVID-19 Agent-Based Model
 
 This repository contains the Mesa model and associated tooling for a COVID-19 agent-based model.
 
