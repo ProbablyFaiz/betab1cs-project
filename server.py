@@ -1,6 +1,7 @@
 import networkx as nx
 
 from mesa.visualization.ModularVisualization import ModularServer
+from mesa.visualization.UserParam import UserSettableParameter
 from mesa.visualization.modules import ChartModule
 from mesa.visualization.modules import NetworkModule
 from mesa.visualization.modules import TextElement
@@ -61,6 +62,121 @@ chart = ChartModule(
     ]
 )
 
+model_params = {
+    "num_nodes": UserSettableParameter(
+        "number",
+        name="Number of Agents",
+        value=500,
+        min_value=1,
+        max_value=1000,
+        step=50,
+        description="Number of Agents",
+    ),
+    "avg_degree": UserSettableParameter(
+        "number",
+        name="Avg. Node Degree",
+        value=10,
+        min_value=1,
+        max_value=50,
+        step=1,
+        description="Avg. Node Degree",
+    ),
+    # TODO: Add such a parameter (possibly with different variants for each individual)
+    # "initial_outbreak_size": UserSettableParameter(
+    #     "slider",
+    #     name="Initial Outbreak Size",
+    #     value=1,
+    #     min_value=1,
+    #     max_value=20,
+    #     step=1,
+    #     description="Initial Outbreak Size",
+    # ),
+    "infection_prob": UserSettableParameter(
+        "number",
+        name="Base Infection Probability",
+        value=0.1,
+        min_value=0.0,
+        max_value=1.0,
+        step=0.1,
+        description=(
+            "Probability of an agent infecting a neighboring agent during a single time"
+            " step for the initial variant"
+        ),
+    ),
+    "death_prob": UserSettableParameter(
+        "number",
+        name="Base Death Probability",
+        value=0.001,
+        min_value=0.0,
+        max_value=1.0,
+        step=0.001,
+        description=(
+            "Probability of an infected agent dies during a single time step for the"
+            " initial variant"
+        ),
+    ),
+    "recovery_prob": UserSettableParameter(
+        "number",
+        name="Recovery Probability",
+        value=0.05,
+        min_value=0.0,
+        max_value=1.0,
+        step=0.01,
+        description=(
+            "Probability that an infected agent recovers during a single time step"
+        ),
+    ),
+    "gain_resistance_prob": UserSettableParameter(
+        "number",
+        "Gain Resistance Probability",
+        value=0.01,
+        min_value=0.0,
+        max_value=1.0,
+        step=0.1,
+        description=(
+            "Probability that a susceptible agent will become resistant to the initial"
+            " variant during a given time step"
+        ),
+    ),
+    "resistance_level": UserSettableParameter(
+        "number",
+        "Resistance Level",
+        value=0.01,
+        min_value=0.0,
+        max_value=1.0,
+        step=0.01,
+        description=(
+            "Probability that a resistant agent will resist an infection relative to a"
+            " susceptible agent. Can be interpreted as vaccine efficacy/protection"
+            " against re-infection"
+        ),
+    ),
+    "mutation_prob": UserSettableParameter(
+        "slider",
+        "Mutation Probability",
+        value=0.001,
+        min_value=0.0,
+        max_value=1.0,
+        step=0.001,
+        description=(
+            "Probability that a given bit of a virus' genetic code will flip during"
+            " reproduction"
+        ),
+    ),
+    "genome_bits": UserSettableParameter(
+        "slider",
+        "Genome Bits",
+        value=4,
+        min_value=4,
+        max_value=16,
+        step=4,
+        description=(
+            "Number of bits in each agent's genome. Must be a multiple of 4. 2^n"
+            " variants are possible for a genome_bits value n"
+        ),
+    ),
+}
+
 
 class ModelInfo(TextElement):
     def render(self, model: CovidModel):
@@ -74,4 +190,6 @@ class ModelInfo(TextElement):
         )
 
 
-server = ModularServer(CovidModel, [network, ModelInfo(), chart], "COVID-19 Model")
+server = ModularServer(
+    CovidModel, [network, ModelInfo(), chart], "COVID-19 Model", model_params
+)
