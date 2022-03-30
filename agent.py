@@ -50,7 +50,7 @@ class CovidAgent(Agent):
                 self.infection_variant = None
             elif (
                 self.random.random() < self.model.death_prob
-                and self.random.random() > self.death_resistance_level
+                and self.random.random() > self.resistance_level(self.infection_variant)
             ):
                 self.state = InfectionState.DEAD
             else:
@@ -73,29 +73,19 @@ class CovidAgent(Agent):
         if (
             self.state in (InfectionState.SUSCEPTIBLE, InfectionState.RESISTANT)
             and self.random.random() < variant.base_infection_prob
-            and self.random.random() > self.infection_resistance_level(variant)
+            and self.random.random() > self.resistance_level(variant)
         ):
             self.state = InfectionState.INFECTED
             self.infection_variant = variant.child_variant()
 
-    def infection_resistance_level(self, variant: CovidVariant) -> float:
+    def resistance_level(self, variant: CovidVariant) -> float:
         return max(
             (
                 remembered_variant.similarity(variant)
                 for remembered_variant in self.immune_memory
             ),
             default=0,
-        )
-
-    @property
-    def death_resistance_level(self) -> float:
-        return max(
-            (
-                remembered_variant.similarity(self.infection_variant)
-                for remembered_variant in self.immune_memory
-            ),
-            default=0,
-        )
+        ) * self.model.resistance_level
 
     @property
     def neighbors(self) -> list["CovidAgent"]:

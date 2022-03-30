@@ -29,13 +29,13 @@ class CovidModel(Model):
     def __init__(
         self,
         num_nodes=500,
-        avg_degree=4,
+        avg_degree=10,
         infection_prob=0.1,
         recovery_prob=0.05,
         death_prob=0.001,
         gain_resistance_prob=0.01,
         resistance_level=1.0,
-        mutation_prob=0.01,
+        mutation_prob=0.001,
         genome_bits=8,
     ):
         """
