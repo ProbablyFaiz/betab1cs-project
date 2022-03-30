@@ -20,7 +20,7 @@ DEFAULT_MODEL_PARAMS = {
     "death_prob": 0.001,
     "gain_resistance_prob": 0.01,
     "resistance_level": 1.0,
-    "mutation_prob": 0.01,
+    "mutation_prob": 0.001,
     "genome_bits": 4,
 }
 
