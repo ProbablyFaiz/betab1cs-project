@@ -9,7 +9,9 @@ from agent import CovidAgent, InfectionState
 
 STATE_COLOR_MAP = {
     InfectionState.INFECTED: "#cc0000",
-    InfectionState.SUSCEPTIBLE: "#6aa84f",
+    InfectionState.SUSCEPTIBLE: "#f6b26b",
+    InfectionState.RESISTANT: "#6aa84f",
+    InfectionState.DEAD: "#000000",
 }
 
 
@@ -54,13 +56,22 @@ chart = ChartModule(
     [
         {"Label": "Infected", "Color": STATE_COLOR_MAP[InfectionState.INFECTED]},
         {"Label": "Susceptible", "Color": STATE_COLOR_MAP[InfectionState.SUSCEPTIBLE]},
+        {"Label": "Resistant", "Color": STATE_COLOR_MAP[InfectionState.RESISTANT]},
+        {"Label": "Dead", "Color": STATE_COLOR_MAP[InfectionState.DEAD]},
     ]
 )
 
 
 class ModelInfo(TextElement):
     def render(self, model: CovidModel):
-        return f"{model.num_infected} infected, {model.num_susceptible} susceptible"
+        return (
+            f"{model.num_infected} infected, "
+            f"{model.num_susceptible} susceptible, "
+            f"{model.num_resistant} resistant, "
+            f"{model.num_dead} dead<br>"
+            "Dominant variants: "
+            f"{', '.join([f'{variant.name} ({freq} cases, {variant.base_infection_prob:3.2f} infectivity)' for (variant, freq) in model.variant_frequency[:3]])}"
+        )
 
 
 server = ModularServer(CovidModel, [network, ModelInfo(), chart], "COVID-19 Model")

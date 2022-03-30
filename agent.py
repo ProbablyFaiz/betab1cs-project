@@ -3,6 +3,8 @@ from typing import cast, TYPE_CHECKING
 
 from mesa import Agent
 
+from variant import CovidVariant
+
 if TYPE_CHECKING:  # Avoids circular import issues
     from model import CovidModel
 
@@ -15,48 +17,84 @@ class InfectionState(int, Enum):
     SUSCEPTIBLE = 0
     INFECTED = 1
     RESISTANT = 2
+    DEAD = 3
 
 
+# noinspection PyChainedComparisons
 class CovidAgent(Agent):
     model: "CovidModel"
     state: InfectionState
+    infection_variant: CovidVariant | None
+
+    immune_memory: list[CovidVariant]
 
     def __init__(
-        self, unique_id: int, model: "CovidModel", initial_state: InfectionState
+        self,
+        unique_id: int,
+        model: "CovidModel",
+        initial_state: InfectionState,
+        infection_variant: CovidVariant = None,
     ):
         super().__init__(unique_id, model)
         self.state = initial_state
+        self.immune_memory = []
+        self.infection_variant = infection_variant
 
     def step(self) -> None:
         if self.state == InfectionState.INFECTED:
             # Either the agent recovers or spreads the virus with some probability
             if self.random.random() < self.model.recovery_prob:
-                self.state = (
-                    InfectionState.RESISTANT
-                )  # Assume for now that recovered agents become resistant
+                # Recovered agents become resistant
+                self.state = InfectionState.RESISTANT
+                self.immune_memory.append(self.infection_variant)
+                self.infection_variant = None
+            elif (
+                self.random.random() < self.model.death_prob
+                and self.random.random() > self.death_resistance_level
+            ):
+                self.state = InfectionState.DEAD
             else:
                 self.infect_neighbors()
         elif self.state == InfectionState.SUSCEPTIBLE:
             if self.random.random() < self.model.gain_resistance_prob:
                 self.state = InfectionState.RESISTANT
+                self.immune_memory.append(
+                    CovidVariant(self.model, 0, 0)
+                )  # Vaccine immunity, not contagious
 
     def infect_neighbors(self) -> None:
         """
         Infect susceptible neighbors with probability model.infection_prob
         """
         for neighbor in self.neighbors:
-            if self.should_infect_neighbor(neighbor):
-                neighbor.state = InfectionState.INFECTED
+            neighbor.try_infect(self.infection_variant)
 
-    def should_infect_neighbor(self, neighbor: "CovidAgent") -> bool:
-        # noinspection PyChainedComparisons
-        return (
-            neighbor.state == InfectionState.SUSCEPTIBLE
-            and self.random.random() < self.model.infection_prob
-        ) or (
-            neighbor.state == InfectionState.RESISTANT
-            and self.random.random() < self.model.infection_prob
-            and self.random.random() > self.model.resistance_level
+    def try_infect(self, variant: CovidVariant) -> None:
+        if (
+            self.state in (InfectionState.SUSCEPTIBLE, InfectionState.RESISTANT)
+            and self.random.random() < variant.base_infection_prob
+            and self.random.random() > self.infection_resistance_level(variant)
+        ):
+            self.state = InfectionState.INFECTED
+            self.infection_variant = variant.child_variant()
+
+    def infection_resistance_level(self, variant: CovidVariant) -> float:
+        return max(
+            (
+                remembered_variant.similarity(variant)
+                for remembered_variant in self.immune_memory
+            ),
+            default=0,
+        )
+
+    @property
+    def death_resistance_level(self) -> float:
+        return max(
+            (
+                remembered_variant.similarity(self.infection_variant)
+                for remembered_variant in self.immune_memory
+            ),
+            default=0,
         )
 
     @property
