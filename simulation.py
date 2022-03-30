@@ -5,10 +5,10 @@ from multiprocessing import Pool, cpu_count
 from model import CovidModel
 
 MAX_STEPS = 500
-INFECTION_THRESHOLD = 0.9
+INFECTION_THRESHOLD = 1.0
 
 NUM_PROCESSES = max(int(cpu_count() / 2), 1)
-NUM_SIMULATIONS = 500
+NUM_SIMULATIONS = 1
 
 pool = None
 
@@ -82,38 +82,6 @@ if __name__ == "__main__":
             "recovery_prob": 0.02,
             "resistance_level": 0.7,
             "death_prob": 0.0,
-        },
-        {
-            "avg_degree": 10,
-            "infection_prob": 0.1,
-            "gain_resistance_prob": 0.01,
-            "recovery_prob": 0.02,
-            "resistance_level": 0.7,
-            "death_prob": 0.0,
-        },
-        {
-            "avg_degree": 10,
-            "infection_prob": 0.1,
-            "gain_resistance_prob": 0.01,
-            "resistance_level": 0.7,
-            "recovery_prob": 0.02,
-            "death_prob": 0.01,
-        },
-        {
-            "avg_degree": 10,
-            "infection_prob": 0.1,
-            "gain_resistance_prob": 0.01,
-            "resistance_level": 0.7,
-            "recovery_prob": 0.02,
-            "death_prob": 0.02,
-        },
-        {
-            "avg_degree": 10,
-            "infection_prob": 0.1,
-            "gain_resistance_prob": 0.01,
-            "resistance_level": 0.7,
-            "recovery_prob": 0.02,
-            "death_prob": 0.03,
         },
     ]
     for config in run_configurations:
