@@ -152,7 +152,7 @@ model_params = {
         ),
     ),
     "mutation_prob": UserSettableParameter(
-        "slider",
+        "number",
         "Mutation Probability",
         value=0.001,
         min_value=0.0,
