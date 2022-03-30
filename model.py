@@ -12,6 +12,18 @@ import networkx as nx
 from agent import CovidAgent, InfectionState
 from variant import CovidVariant
 
+DEFAULT_MODEL_PARAMS = {
+    "num_nodes": 500,
+    "avg_degree": 10,
+    "infection_prob": 0.1,
+    "recovery_prob": 0.05,
+    "death_prob": 0.001,
+    "gain_resistance_prob": 0.01,
+    "resistance_level": 1.0,
+    "mutation_prob": 0.01,
+    "genome_bits": 4,
+}
+
 
 class CovidModel(Model):
     G: nx.Graph
@@ -28,15 +40,15 @@ class CovidModel(Model):
 
     def __init__(
         self,
-        num_nodes=500,
-        avg_degree=10,
-        infection_prob=0.1,
-        recovery_prob=0.05,
-        death_prob=0.001,
-        gain_resistance_prob=0.01,
-        resistance_level=1.0,
-        mutation_prob=0.001,
-        genome_bits=8,
+        num_nodes=DEFAULT_MODEL_PARAMS["num_nodes"],
+        avg_degree=DEFAULT_MODEL_PARAMS["avg_degree"],
+        infection_prob=DEFAULT_MODEL_PARAMS["infection_prob"],
+        recovery_prob=DEFAULT_MODEL_PARAMS["recovery_prob"],
+        death_prob=DEFAULT_MODEL_PARAMS["death_prob"],
+        gain_resistance_prob=DEFAULT_MODEL_PARAMS["gain_resistance_prob"],
+        resistance_level=DEFAULT_MODEL_PARAMS["resistance_level"],
+        mutation_prob=DEFAULT_MODEL_PARAMS["mutation_prob"],
+        genome_bits=DEFAULT_MODEL_PARAMS["genome_bits"],
     ):
         """
         Initializes the COVID model.

@@ -5,7 +5,7 @@ from mesa.visualization.UserParam import UserSettableParameter
 from mesa.visualization.modules import ChartModule
 from mesa.visualization.modules import NetworkModule
 from mesa.visualization.modules import TextElement
-from model import CovidModel
+from model import CovidModel, DEFAULT_MODEL_PARAMS
 from agent import CovidAgent, InfectionState
 
 STATE_COLOR_MAP = {
@@ -66,7 +66,7 @@ model_params = {
     "num_nodes": UserSettableParameter(
         "number",
         name="Number of Agents",
-        value=500,
+        value=DEFAULT_MODEL_PARAMS["num_nodes"],
         min_value=1,
         max_value=1000,
         step=50,
@@ -75,7 +75,7 @@ model_params = {
     "avg_degree": UserSettableParameter(
         "number",
         name="Avg. Node Degree",
-        value=10,
+        value=DEFAULT_MODEL_PARAMS["avg_degree"],
         min_value=1,
         max_value=50,
         step=1,
@@ -94,7 +94,7 @@ model_params = {
     "infection_prob": UserSettableParameter(
         "number",
         name="Base Infection Probability",
-        value=0.1,
+        value=DEFAULT_MODEL_PARAMS["infection_prob"],
         min_value=0.0,
         max_value=1.0,
         step=0.1,
@@ -106,7 +106,7 @@ model_params = {
     "death_prob": UserSettableParameter(
         "number",
         name="Base Death Probability",
-        value=0.001,
+        value=DEFAULT_MODEL_PARAMS["death_prob"],
         min_value=0.0,
         max_value=1.0,
         step=0.001,
@@ -118,7 +118,7 @@ model_params = {
     "recovery_prob": UserSettableParameter(
         "number",
         name="Recovery Probability",
-        value=0.05,
+        value=DEFAULT_MODEL_PARAMS["recovery_prob"],
         min_value=0.0,
         max_value=1.0,
         step=0.01,
@@ -129,7 +129,7 @@ model_params = {
     "gain_resistance_prob": UserSettableParameter(
         "number",
         "Gain Resistance Probability",
-        value=0.01,
+        value=DEFAULT_MODEL_PARAMS["gain_resistance_prob"],
         min_value=0.0,
         max_value=1.0,
         step=0.1,
@@ -141,7 +141,7 @@ model_params = {
     "resistance_level": UserSettableParameter(
         "number",
         "Resistance Level",
-        value=0.01,
+        value=DEFAULT_MODEL_PARAMS["resistance_level"],
         min_value=0.0,
         max_value=1.0,
         step=0.01,
@@ -154,7 +154,7 @@ model_params = {
     "mutation_prob": UserSettableParameter(
         "number",
         "Mutation Probability",
-        value=0.001,
+        value=DEFAULT_MODEL_PARAMS["mutation_prob"],
         min_value=0.0,
         max_value=1.0,
         step=0.001,
@@ -166,7 +166,7 @@ model_params = {
     "genome_bits": UserSettableParameter(
         "slider",
         "Genome Bits",
-        value=4,
+        value=DEFAULT_MODEL_PARAMS["genome_bits"],
         min_value=4,
         max_value=16,
         step=4,
