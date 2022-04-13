@@ -34,9 +34,13 @@ class CovidModel(Model):
     gain_resistance_prob: float
     resistance_level: float
     mutation_prob: float
+    genome_bits: float
 
     variant_code_map: dict[str, CovidVariant]
-    variant_data: list[list[tuple[CovidVariant, int]]]
+    variant_freq_series: list[list[tuple[CovidVariant, int]]]
+    variant_immunity_series: list[dict[CovidVariant, float]]
+
+    dump_data: bool
 
     def __init__(
         self,
@@ -49,6 +53,7 @@ class CovidModel(Model):
         resistance_level=DEFAULT_MODEL_PARAMS["resistance_level"],
         mutation_prob=DEFAULT_MODEL_PARAMS["mutation_prob"],
         genome_bits=DEFAULT_MODEL_PARAMS["genome_bits"],
+        dump_variant_data=False,
     ):
         """
         Initializes the COVID model.
@@ -78,6 +83,7 @@ class CovidModel(Model):
         self.resistance_level = resistance_level
         self.mutation_prob = mutation_prob
         self.genome_bits = genome_bits
+        self.dump_data = dump_variant_data
 
         self.schedule = RandomActivation(self)
         edge_probability = avg_degree / num_nodes
@@ -85,7 +91,8 @@ class CovidModel(Model):
         self.grid = NetworkGrid(self.G)
 
         self.start_time = int(time() * 1000)
-        self.variant_data = []
+        self.variant_freq_series = []
+        self.variant_immunity_series = []
 
         self.datacollector = DataCollector(
             {
@@ -93,7 +100,6 @@ class CovidModel(Model):
                 "Infected": "num_infected",
                 "Resistant": "num_resistant",
                 "Dead": "num_dead",
-                "Variants": "variant_frequency",
             }
         )
 
@@ -113,9 +119,11 @@ class CovidModel(Model):
 
     def step(self) -> None:
         self.datacollector.collect(self)
-        self.variant_data.append(self.variant_frequency)
-        if self.schedule.steps % 25 == 0:
-            self.dump_variant_data()  # Not great to run this here, but fine for testing
+        if self.dump_data:
+            self.variant_freq_series.append(self.variant_frequency)
+            self.variant_immunity_series.append(self.variant_immunity_levels)
+            if self.schedule.steps > 0 and self.schedule.steps % 50 == 0:
+                self.dump_variant_data()
         self.schedule.step()
 
     def dump_variant_data(self):
@@ -131,21 +139,30 @@ class CovidModel(Model):
                     "Maximum Cases",
                     "Infection Probability",
                     "Death Probability",
+                    "Avg. Immunity at First Case",
                 ]
             )
-            max_cases_dict = defaultdict(lambda: -1)
-            for freq_info in self.variant_data:
-                for (variant, frequency) in freq_info:
-                    max_cases_dict[variant] = max(max_cases_dict[variant], frequency)
-            for variant, max_cases in max_cases_dict.items():
+            # Tracks the maximum number of cases for each variant and the time step at which it occurred
+            max_cases_dict = defaultdict(lambda: (-1, -1))
+            first_case_step_dict = {}
+            for i, freq_info in enumerate(self.variant_freq_series):
+                for variant, frequency in freq_info:
+                    if variant not in first_case_step_dict:
+                        first_case_step_dict[variant] = i
+                    if frequency > max_cases_dict[variant][0]:
+                        max_cases_dict[variant] = (frequency, i)
+            for variant, (max_cases, max_case_step) in max_cases_dict.items():
+                # Get the time step of the first case of the variant
                 writer.writerow(
                     [
                         variant.name,
                         max_cases,
                         f"{variant.base_infection_prob:4.3f}",
                         f"{variant.base_death_prob:5.4f}",
+                        f"{self.variant_immunity_series[first_case_step_dict[variant]][variant]:5.4f}",
                     ]
                 )
+            f.flush()
         time_series_file_name = f"output/variant-time-series-{self.start_time}.csv"
         variant_order = sorted(
             [variant for variant in max_cases_dict.keys()],
@@ -154,12 +171,13 @@ class CovidModel(Model):
         with open(time_series_file_name, "w") as f:
             writer = csv.writer(f)
             writer.writerow(["Time Step"] + [v.name for v in variant_order])
-            for i, freq_info in enumerate(self.variant_data):
+            for i, freq_info in enumerate(self.variant_freq_series):
                 curr_row = [i]
                 freq_info_dict = defaultdict(lambda: 0, freq_info)
                 for variant in variant_order:
                     curr_row.append(freq_info_dict[variant])
                 writer.writerow(curr_row)
+            f.flush()
 
     @property
     def num_susceptible(self) -> int:
@@ -197,6 +215,25 @@ class CovidModel(Model):
             list[tuple[CovidVariant, int]],
             sorted(counter.items(), key=lambda t: t[1], reverse=True),
         )
+
+    @property
+    def variant_immunity_levels(self) -> dict[CovidVariant, float]:
+        """
+        Tracks average level of immunity for each variant during the current time step.
+        Very expensive to compute ( O(num_nodes*num_variants) ), but valuable to collect.
+        """
+        variant_immunity_levels = {}
+        total_immunity = 0.0
+        for variant in self.variant_code_map.values():
+            avg_immunity = sum(
+                agent.resistance_level(variant) for agent in self.agents
+            ) / len(self.agents)
+            variant_immunity_levels[variant] = avg_immunity
+            total_immunity += avg_immunity
+        avg_immunity = total_immunity / len(self.variant_code_map)
+        for variant, immunity in variant_immunity_levels.items():
+            variant_immunity_levels[variant] = immunity / avg_immunity if avg_immunity > 0 else 0
+        return variant_immunity_levels
 
     @property
     def summary(self) -> str:
